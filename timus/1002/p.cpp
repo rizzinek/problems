@@ -17,46 +17,63 @@ struct word
 	string d;
 };
 
-struct query
-{
-	vector<int> words;
-	int idx;
-};
-
-bool isPrefix(string &a, string &b)
-{
-	for(int i = 0; i < b.length(); ++i)
-		if(a[i] != b[i])
-			return false;
-	return true;
-}
-
 void initMap(map<char, char> &letterMap);
 
-void dfs(vector<word> &dict, int lastIdx, string &number, vector<string> &re)
+void solve(vector<word> &dict, string &number, vector<int> &res)
 {
-	for(int i = lastIdx; i >= 0; --i)
-	{
-		if(isPrefix(number, dict[i].d))
-		{
-			string newNum = number.substr(dict[i].d.length());
-			int newLastIdx = lastIdx;
-			while(dict[newLastIdx].d.length() > newNum.length() && newLastIdx >= 0)
-				--newLastIdx;
-			if(newNum.length() > 0)
-			{
-				dfs(dict, newLastIdx, newNum, res);
-			}
-			else
-			{
+	const int maxWordLen = dict[dict.size() - 1].d.length();
+	vector<int> *d = new vector<int>[number.length() + 1];
 
+	for(int length = 1; length <= number.length(); ++length)
+	{
+		int curMinSize = 0;
+		int curMinIdx = 0;
+		int curMinWordIdx = 0;
+		for(int j = 0; j < length; ++j)
+		{
+			string prefix;
+			for(int k = 0; k < d[j].size(); ++k)
+				prefix += dict[d[j][k]].d;
+			string suffix = number.substr(prefix.length(), length - prefix.length());
+
+			if(suffix.length() > maxWordLen)
+				continue;
+
+			for(int k = 0; k < dict.size(); ++k)
+			{
+				if(suffix.length() < dict[k].d.length())
+					break;
+				if(suffix.length() > dict[k].d.length())
+					continue;
+				bool fits = true;
+				for(int r = 0; r < suffix.length(); ++r)
+				{
+					if(suffix[r] != dict[k].d[r])
+					{
+						fits = false;
+						break;
+					}
+				}
+				if(fits)
+				{
+					int newSize = d[j].size() + 1;
+					if(curMinSize == 0 || newSize < curMinSize)
+					{
+						curMinSize = newSize;
+						curMinIdx = j;
+						curMinWordIdx = k;
+					}
+				}
 			}
 		}
-	}
-}
 
-void solve(vector<word> &dict, string &number, vector<string> &res)
-{
+		if(curMinSize > 0)
+		{
+			d[length] = d[curMinIdx];
+			d[length].push_back(curMinWordIdx);
+		}
+	}
+	res = d[number.length()];
 }
 
 int main()
@@ -70,7 +87,7 @@ int main()
 	string number;
 	vector<word> dict;
 	int size = 0;
-	vector<string> res;
+	vector<int> res;
 	map<string, vector<string> > cache;
 
 	while(number != "-1")
@@ -113,9 +130,9 @@ int main()
 			for(int j = 0; j < res.size(); ++j)
 			{
 				if(j == 0)
-					cout << res[j];
+					cout << dict[res[j]].w;
 				else
-					cout << " " << res[j];
+					cout << " " << dict[res[j]].w;
 			}
 			cout << "\n";
 		}
