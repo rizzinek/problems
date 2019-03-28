@@ -9,64 +9,88 @@
 
 using namespace std;
 
-struct interval
+map<int, int> even;
+
+int find_parent(map<int, int> &m, int n)
 {
-	int l;
-	int r;
-	interval(int left = 0, int right = 0)
+	auto iter = m.find(n);
+	if(iter == m.end())
 	{
-		l = left;
-		r = right;
+		m[n] = n;
+		return n;
 	}
-};
-
-struct node
-{
-	interval in;
-	//0 / 1 - result of x % 2, 2 - unknown value
-	int value;
-	node* parent;
-	vector<node> children;
-
-	node(int l, int r, int v)
-		: in(l, r), value(v), parent(nullptr)
-	{}
-
-	bool addNode(node n)
-	{
-		if(n.l < in.l || n.r > in.r)
-			return false;
-
-		return true;
-	}
-};
+	int p = (*iter).second;
+	if(p != n)
+		p = find_parent(m, p);
+	m[n] = p;
+	return p;
+}
 
 int main()
 {
 #ifndef ONLINE_JUDGE
 	freopen("input.txt", "rt", stdin);
 #endif
-	int n = 0;
+	int length = 0, queries = 0;
 
 	while(true)
 	{
-		cin >> n;
-		if(n == -1)
+		even.clear();
+		cin >> length;
+		if(length == -1)
 			break;
-		node root(1, n, 2);
-		cin >> n;
-		int res = n;
-		for(int i = 0; i < n; ++i)
+		cin >> queries;
+		int res = queries;
+		for(int q = 0; q < queries; ++q)
 		{
-			int l = 0, r = 0;
-			cin >> l >> r;
-			string val;
-			cin >> val;
-			node newNode(l, r, val == "even" ? 0 : 1);
-			if(!root.addNode(newNode))
+			int left = 0, right = 0;
+			cin >> left >> right;
+			string response;
+			cin >> response;
+			if(res < queries)
+				continue;
+
+			if(left <= 0 || right > length)
 			{
-				res = i;
-				break;
+				res = q;
+				continue;
+			}
+
+			//disjointed sets. Set element T is equivalent to the "oddness" of all the digits up to T (inclusive)
+			//set element -T is equivalent to the opposite value of T
+			//a b even => 0..a-1 and 0..b have same oddness
+			//a b odd => 0..a-1 and 0..b have different oddness
+			//
+			//I use T / -T pairs. If I do --left; then I will have 0 in my system, that doesn't have a pair.
+			//use ++right instead
+			//--left;
+			++right;
+			int oddEven = response == "even" ? 0 : 1;
+
+			int lp = find_parent(even, left);
+			int nlp = find_parent(even, -left);
+			int rp = find_parent(even, right);
+			int nrp = find_parent(even, -right);
+
+			if(oddEven == 0)
+			{
+				if(lp == nrp || nlp == rp)
+				{
+					res = q;
+					continue;
+				}
+				even[rp] = lp;
+				even[nrp] = nlp;
+			}
+			else
+			{
+				if(lp == rp || nlp == nrp)
+				{
+					res = q;
+					continue;
+				}
+				even[rp] = nlp;
+				even[nrp] = lp;
 			}
 		}
 		cout << res << endl;
